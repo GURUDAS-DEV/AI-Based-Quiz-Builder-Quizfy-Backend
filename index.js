@@ -13,6 +13,7 @@ import { v2 as cloudinary } from "cloudinary";
 import dotenv from 'dotenv';
 import path from "path";
 import { otherRouter } from "./Router/otherRoute.js";
+import { AIFeatureRouter } from "./Router/AIFeatureRoute.js";
 dotenv.config({path: '.env'});
 
 
@@ -52,6 +53,7 @@ connection("mongodb+srv://Gurudas_9811:Radhasoami9811@quizfycluster.odpmhss.mong
 
 app.use("/user/",userRouter);
 app.use("/handleQuestions/",handleRouter);
+app.use("/AIFeatures/", AIFeatureRouter);
 app.use("/other/", otherRouter);
 
 app.get("/ping", (req, res)=>{

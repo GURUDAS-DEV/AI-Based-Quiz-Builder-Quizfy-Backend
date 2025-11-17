@@ -51,7 +51,6 @@ handleRouter.delete("/DeletePresenation", deletePresenation);
 
 handleRouter.post("/AddAdmin", AddAdmin);
 handleRouter.post("/DeleteAddedAdmin", deleteAddedAdmin);
-handleRouter.post("/getSharedPresentations", sharePresentation)
-
+handleRouter.post("/getSharedPresentations", sharePresentation);
 
 export { handleRouter }

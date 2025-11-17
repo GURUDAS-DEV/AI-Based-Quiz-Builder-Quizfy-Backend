@@ -61,10 +61,11 @@ export async function addQuestion(req, res) {
     designType,
     designTemplate,
     question,
-    options = []
+    options = [],
+    description
   } = req.body;
 
-  console.log(presentationId, designTemplate, designType, question, options)
+  console.log(description);
 
   if (!presentationId || !designType || !designTemplate || !question) {
     return res.status(400).json({ Message: "All fields are required!" });
@@ -84,6 +85,7 @@ export async function addQuestion(req, res) {
       designTemplate,
       question,
       options: options.length ? options : undefined,
+      description : description || "",
       order
     });
 
@@ -151,6 +153,8 @@ export async function GetPresentation(req, res) {
 //for searching questions : 
 export async function searchQuestion(req, res) {
   const { presentationId } = req.body;
+
+  console.log("Search Questions : ", presentationId);
 
   if (!presentationId) return res.status(400).json({ Message: "Provide all Details!" });
 
