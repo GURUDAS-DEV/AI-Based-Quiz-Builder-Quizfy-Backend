@@ -23,7 +23,8 @@ const port = process.env.PORT || 9000;
 const allowedOrigin = [
   'http://localhost:5173',  // your dev server
   'http://localhost:3000',  // your build test server
-  'https://quizify-jlg9.onrender.com'  // your deployed frontend
+  'https://quizify-jlg9.onrender.com',
+  'https://quizifyai.me' // your deployed frontend
 ];
 
 app.use(cors({
