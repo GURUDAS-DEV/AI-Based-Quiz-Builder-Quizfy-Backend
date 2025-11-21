@@ -45,7 +45,6 @@ export const adminControlledQuizHandler = (io, socket) => {
 
 
             socket.join(presentationId);
-            console.log(`✅ Admin joined room ${presentationId} (socket ${socket.id})`);
 
             const questions = await questionModel.find({ presentation: presentation._id }).sort({ order: 1 });
             if (!questions.length) {
@@ -176,8 +175,6 @@ export const adminControlledQuizHandler = (io, socket) => {
                     results: [],
                 });
 
-                console.log("✅ Starting new quiz session", presentationId);
-
                 socket.emit("newQuestionForAdmin", { question: currentQuestionObj });
                 // don't need to emit to users here — users will get it when they join via joinQuizByUser flow
             }
@@ -266,7 +263,6 @@ export const adminControlledQuizHandler = (io, socket) => {
                 await redis.hset(sessionKey, "currentIndex", String(nextIndex));
                 await redis.hset(sessionKey, "currentQuestion", JSON.stringify(nextQuestionState));
 
-                console.log("-> Moving to next question:", presentationId, "Question Index:", nextIndex);
 
                 // Emit to admin and all users in the room (use room emit so all users receive)
                 socket.emit("newQuestionForAdmin", { question: nextQuestionState });
@@ -274,7 +270,6 @@ export const adminControlledQuizHandler = (io, socket) => {
 
             } else {
                 // End quiz
-                console.log("-> Ending quiz:", presentationId);
                 socket.emit("endQuiz", "Quiz is ended");
                 io.of("/adminControlledQuiz").in(presentationId).emit("quizEnded", "Quiz is ended");
                 await Session.updateOne({ quizId: presentationId }, { status: "ended", endedAt: new Date() });
@@ -348,7 +343,6 @@ export const adminControlledQuizHandler = (io, socket) => {
             await redis.hset(sessionKey, "currentIndex", String(prevIndex));
             await redis.hset(sessionKey, "currentQuestion", JSON.stringify(prevQuestionState));
 
-            console.log("⬅️ Moving to previous question:", presentationId, "Question Index:", prevIndex);
 
             // Send to admin + all users
             socket.emit("newQuestionForAdmin", { question: prevQuestionState });
@@ -460,7 +454,6 @@ export const adminControlledQuizHandler = (io, socket) => {
                 socket.emit("error", { message: "Missing presentationId or message" });
                 return;
             }
-            console.log("Received comment:", { presentationId, userId, userName, message });
 
             const comment = {
                 presentationId,
@@ -622,7 +615,6 @@ export const adminControlledQuizHandler = (io, socket) => {
     socket.on("joinQuizByUser", async ({ presentationId, userName, userId }) => {
         try {
             if (!presentationId || !userName || !userId) {
-                console.log("🔴 Missing required fields for joinQuiz");
                 socket.emit("error", { message: "presentationId, userName and userId are required" });
                 return;
             }
@@ -630,8 +622,7 @@ export const adminControlledQuizHandler = (io, socket) => {
             socket.userId = userId;                  // save for disconnect
             socket.join(presentationId);
 
-            socket.join(presentationId);
-            console.log(`🔵 User ${userName} (${userId}) joined room ${presentationId}`);
+            socket.join(presentationId)
 
             const sessionKey = `quiz:${presentationId}`;
 
@@ -642,7 +633,6 @@ export const adminControlledQuizHandler = (io, socket) => {
             // --- 2) Fetch updated participant list ---
             const allParticipantsObj = await redis.hgetall(participantKey);
             const participants = Object.values(allParticipantsObj).map((p) => JSON.parse(p));
-            console.log(`Participants in quiz ${presentationId}:`, participants);
 
             // --- 3) Emit updated participants to everyone in this quiz ---
             io.of("/adminControlledQuiz").to(presentationId).emit("participantsUpdate", { participants });
@@ -668,7 +658,6 @@ export const adminControlledQuizHandler = (io, socket) => {
     socket.on("disconnect", async () => {
         const { presentationId, userId } = socket;
         if (!presentationId || !userId) return;
-        console.log(`🔴 User ${userId} disconnected from room ${presentationId} (socket ${socket.id})`);
 
         const participantKey = `quiz:${presentationId}:participants`;
         await redis.del(participantKey, userId);

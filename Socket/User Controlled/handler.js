@@ -15,7 +15,6 @@ export const userControlledQuizHandler = async (io, socket) => {
                 socket.emit("error", { message: "Presentation ID or Access Token is not given!" });
                 return;
             }
-            console.log(accessToken," From join quiz By Admin")
             const decodedToken = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
 
             if (!decodedToken) {
@@ -119,7 +118,6 @@ export const userControlledQuizHandler = async (io, socket) => {
     socket.on("handleVotes", async ({ presentationId, userId, optionId, userName, questionId }) => {
         if (!presentationId || !userId || !questionId || !optionId) {
             socket.emit("error", { message: "Missing required fields!" });
-            console.log("error")
             return;
         }
 
@@ -358,7 +356,6 @@ export const userControlledQuizHandler = async (io, socket) => {
     socket.on("disconnect", async () => {
         const { presentationId, userId } = socket;
         if (!presentationId || !userId) return;
-        console.log(`🔴 User ${userId} disconnected from room ${presentationId} (socket ${socket.id})`);
 
         const participantKey = `quiz:${presentationId}:Participants`;
         await redis.hdel(participantKey, userId);

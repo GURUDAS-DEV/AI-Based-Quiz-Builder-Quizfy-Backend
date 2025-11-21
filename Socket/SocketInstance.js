@@ -33,12 +33,10 @@ export const initSocket = async (server) => {
     const userControlledQuiz = io.of("/userControlledQuiz");
 
     adminControlledQuiz.on("connection", (socket) => {
-        console.log("✅ New socket connected to /adminControlledQuiz:", socket.id);
         adminControlledQuizHandler(io, socket);
     });
 
     userControlledQuiz.on("connection", (socket) => {
-        console.log("Someone Connnected to UserControlled Quiz", socket.id);
         userControlledQuizHandler(io, socket);
     })
 

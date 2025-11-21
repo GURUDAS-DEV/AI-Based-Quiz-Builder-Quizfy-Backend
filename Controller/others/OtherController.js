@@ -14,7 +14,6 @@ export const reportBug = async (req, res) => {
         return res.status(200).json({ message: "Bug submitted successfully!" });
     } 
     catch (error) {
-        console.log("Error in reporting bug:", error);
         return res.status(500).json({ message: "Internal server error", error });
     }
 }
@@ -31,7 +30,6 @@ export const reviewHandler = async(req, res)=>{
         return res.status(200).json({ message: "Thanks for reviewing us!" });
     }
     catch (error) {
-        console.log("Error in submitting review:", error);
         return res.status(500).json({ message: "Internal server error", error });
     }
 }

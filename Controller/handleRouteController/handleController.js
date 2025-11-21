@@ -30,7 +30,7 @@ export async function createPresentation(req, res) {
 
     return res.status(200).json({ Message: "Presentation Created Successfully!", presentationId: response._id, response });
   } catch (e) {
-    console.log("Error : ", e);
+    // console.log("Error : ", e);
     return res.status(500).json({ Message: "Internal Server Error!" });
   }
 }
@@ -48,7 +48,7 @@ export const deleteSlide = async (req, res) => {
 
     return res.status(200).json({ message: "Successfully Deleted!" });
   } catch (e) {
-    console.log("Error when deleting the slide : ", e);
+    // console.log("Error when deleting the slide : ", e);
     return res.status(500).json({ message: "unexpected Error Occured!" });
   }
 }
@@ -64,8 +64,6 @@ export async function addQuestion(req, res) {
     options = [],
     description
   } = req.body;
-
-  console.log(description);
 
   if (!presentationId || !designType || !designTemplate || !question) {
     return res.status(400).json({ Message: "All fields are required!" });
@@ -108,8 +106,7 @@ export async function addQuestion(req, res) {
 //search presentations :
 export async function GetPresentation(req, res) {
   const { userId } = req.body;
-  const { page = 1, limit = 10 } = req.query; // default page=1, limit=10
-  console.log(userId);
+  const { page = 1, limit = 10 } = req.query;
 
   if (!userId) {
     return res.status(404).json({ Message: "Please provide user id!" });
@@ -117,7 +114,6 @@ export async function GetPresentation(req, res) {
 
   try {
     const user = await userModel.findById(userId);
-    console.log(user);
     if (!user) {
       return res.status(404).json({ Message: "User id is not correct!" });
     }
@@ -154,7 +150,7 @@ export async function GetPresentation(req, res) {
 export async function searchQuestion(req, res) {
   const { presentationId } = req.body;
 
-  console.log("Search Questions : ", presentationId);
+  // console.log("Search Questions : ", presentationId);
 
   if (!presentationId) return res.status(400).json({ Message: "Provide all Details!" });
 
@@ -172,8 +168,7 @@ export async function searchQuestion(req, res) {
       question,
     })
   } catch (e) {
-    console.log("Error : ", e);
-    return res.status(500).json({ Message: "Internal Server Error!" });
+    return res.status(500).json({ Message: "Internal Server Error!", error: e.message });
   }
 
 }
@@ -182,10 +177,8 @@ export async function searchQuestion(req, res) {
 //this section is for updating things : 
 
 export async function updateQuestion(req, res) {
-  // console.log("mil gya!")
   const { questionId } = req.params;
   const { question } = req.body;
-  console.log(question, questionId);
 
   if (question == undefined || question == null) return res.status(400).json({ Message: "Question Not Provided" });
 
@@ -200,8 +193,8 @@ export async function updateQuestion(req, res) {
     return res.status(200).json({ Message: "Successfully updated", question: detail.question });
 
   } catch (e) {
-    console.log("error : ", e);
-    return res.status(500).json({ Message: "Internal Server Error!" });
+    // console.log("error : ", e);
+    return res.status(500).json({ Message: "Internal Server Error!", error: e.message });
   }
 }
 
@@ -369,7 +362,8 @@ export const deletePresenation = async (req, res) => {
 
   }
   catch (e) {
-    console.log("error : ", e);
+    // console.log("error : ", e);
+    return res.status(500).json({ Message: "Internal Server Error!", error: e.message });
   }
 }
 
@@ -435,8 +429,8 @@ export const addOption = async (req, res) => {
     return res.json({ message: "Updated Successfully", question });
 
   } catch (e) {
-    console.log("error : ", e);
-    return res.status(500).json({ Message: "Error" });
+    // console.log("error : ", e);
+    return res.status(500).json({ Message: "Error", error: e.message });
   }
 }
 
@@ -492,8 +486,8 @@ export const changeTemplate = async (req, res) => {
     return res.status(200).json({ message: "Update Successfully", question });
   }
   catch (e) {
-    console.log("error in changing template!");
-    return res.status(500).json({ message: "Error" });
+    // console.log("error in changing template!");
+    return res.status(500).json({ message: "Error", error: e.message });
   }
 }
 
@@ -509,7 +503,6 @@ export const AddAdmin = async (req, res) => {
     const user = await userModel.findOne({ email: userGmail });
 
 
-    console.log("Founded : ", user);
     if (!user) {
       return res.status(404).json({ message: "User not found for the Given Email" });
     }
@@ -531,20 +524,17 @@ export const AddAdmin = async (req, res) => {
     };
 
     if (String(presentation.user) === String(admin.userId)) {
-      console.log("User is already the owner of the presentation");
       return res.status(405).json({ message: "User is already the owner of the presentation" });
     }
 
     const adminExists = presentation.addedAdmin.some(admin => String(admin.userId) === String(user._id));
     if (adminExists) {
-      console.log("User is already an admin");
       return res.status(405).json({ message: "User is already an admin of this presentation" });
     }
 
     // 4. Push the admin object into the addedAdmin array
     presentation.addedAdmin.push(admin);
 
-    console.log("Presentation before saving:", presentation);
     await presentation.save();
 
 
@@ -566,7 +556,6 @@ export const deleteAddedAdmin = async (req, res) => {
   try {
     // Check if the presentation exists
     const presentation = await presentationModel.findById(presentationId);
-    console.log(presentation)
 
     if (!presentation) {
       return res.status(404).json({ message: "Presentation not found!" });
@@ -596,7 +585,6 @@ export const deleteAddedAdmin = async (req, res) => {
 
 export const addDescription = async (req, res) => {
   const { questionId, description } = req.body;
-  console.log(questionId, description)
 
   if (!questionId || !description)
     return res.status(404).json({ message: "Please Provide all the things! " });
@@ -614,7 +602,7 @@ export const addDescription = async (req, res) => {
     return res.status(200).json({ message: "Description saved successfully!", question });
   }
   catch (e) {
-    console.log("error while saving description!", e);
+    // console.log("error while saving description!", e);
     return res.status(500).json({ message: "Error while saving description!" });
   }
 }
@@ -636,7 +624,6 @@ export const sharePresentation = async (req, res) => {
     });
 
 
-    console.log(presentations)
     if(!presentations){
       return res.status(404).json({message : "No presentation found!"});
     }
@@ -644,7 +631,7 @@ export const sharePresentation = async (req, res) => {
     return res.status(200).json({message : "Presentations found!", presentations});
   }
   catch(e){
-    console.log("error in sharing presentation!", e);
+    // console.log("error in sharing presentation!", e);
     return res.status(500).json({message : "Error in sharing presentation!"});
   }
 }

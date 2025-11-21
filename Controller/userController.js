@@ -6,8 +6,6 @@ import jwt from "jsonwebtoken"
 export async function HandleSignUp(req, res) {
     const { name, email, password } = req.body;
 
-    console.log(name, email, password);
-
     //checking all field have data
     if (!name || !email || !password) return res.status(400).json({ Message: "Fill all fields!" });
 
@@ -91,18 +89,14 @@ export async function handleLogin(req, res) {
 
 export async function handleReGenerationAccessToken(req, res) {
     const refreshToken = req.cookies?.refreshToken;
-    console.log(refreshToken, "From Handle Regeneration Access Token");
 
     if (!refreshToken) {
-        console.log("Token not Found");
         return res.status(401).json({ Message: "Token not Found" });
     }
     try {
-        console.log(process.env.REFRESH_TOKEN_SECRET)
         const payload = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
 
         const user = await userModel.findById(payload.id);
-        console.log(user);
 
         if (!user)
             return res.status(404).json({ message: "User not found" });
@@ -115,7 +109,6 @@ export async function handleReGenerationAccessToken(req, res) {
 
         return res.status(200).json({ accessToken: newAccessToken });
     } catch (err) {
-        console.log("Token Refresh Error");
         return res.status(403).json({ Message: "Invalid or Expired Refresh Token" });
     }
 }
@@ -157,9 +150,6 @@ export async function handleUpdateName(req, res) {
     const email = req.user?.email;
     const id = req.user?.id;
 
-    console.log("ghus gya hu")
-
-
     if (!name) return res.status(404).json({ Message: "Please Provide A Input!" });
 
     if (name.length <= 2) return res.status(400).json({ Message: "Enter a name with Atleast 2 Alphabet !" });
@@ -173,13 +163,8 @@ export async function handleUpdateName(req, res) {
             return res.status(404).json({ Message: "User not found." });
         }
 
-        console.log(user)
-
         user.name = name;
         await user.save();
-        console.log("aur ghus gya hu");
-        console.log(user);
-        console.log("return kr rha hu")
         const newAccessToken = jwt.sign({ _id: user._id, name: user.name, email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
 
         return res.status(200).json({
@@ -188,19 +173,16 @@ export async function handleUpdateName(req, res) {
         });
     }
     catch (err) {
-        console.log("error me ghus gya hu")
-        console.log("Error!", err);
-        return res.status(500).json({ Message: "Internal Server Error!" });
+        return res.status(500).json({ Message: "Internal Server Error!", error: err });
     }
 }
 
 export async function updatePassword(req, res) {
     const { currentPassword, newPassword, confirmPassword } = req.body;
     const reqUser = req.user;
-    console.log(reqUser)
+    
     if (!reqUser) return res.status(404).json({ Message: "User Not Found!" });
 
-    console.log(newPassword, currentPassword, confirmPassword);
     if (!currentPassword || !newPassword || !confirmPassword) return res.status(400).json({ Message: "Fill all the Fields!" });
 
     if (newPassword.length < 9) return res.status(400).json({ Message: "New Password must be greater than 8 character!" });
@@ -211,7 +193,6 @@ export async function updatePassword(req, res) {
     try {
 
         const user = await userModel.findOne({ _id: reqUser.id });
-        console.log(user);
 
         const isTrue = await bcrypt.compare(currentPassword, user.password);
 
@@ -230,8 +211,7 @@ export async function updatePassword(req, res) {
         return res.status(200).json({ Message: "Password Updated Successfully!" });
     }
     catch (e) {
-        console.log("Error : ", e);
-        return res.status(500).json({ Message: "Internal Server Error" });
+        return res.status(500).json({ Message: "Internal Server Error", error : e });
     }
 
 }

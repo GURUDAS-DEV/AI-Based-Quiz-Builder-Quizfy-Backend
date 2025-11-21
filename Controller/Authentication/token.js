@@ -4,7 +4,6 @@ import {accessTokenLife, accessTokenSecret, refreshTokenLife, refreshTokenSecret
 
 //generates access token :
 export const generateAccessToken = (user)=>{
-    console.log(user);
     return jwt.sign({ id : user._id, name : user.name, email : user.email }, accessTokenSecret, {
         expiresIn : accessTokenLife,
     });
