@@ -4,6 +4,9 @@ import { questionModel } from "../../Models/Presentation/Question/QuestionModel.
 import redis from "../../redis/redisClient.js";
 import jwt from "jsonwebtoken";
 
+// TTL constant - 1 hour (3600 seconds)
+const QUIZ_TTL = 3600;
+
 export const userControlledQuizHandler = async (io, socket) => {
     //--------------------------User Controlled Quiz starts frm here ----------------------//
     //-------------------------1st handler Function-------------------------------//
@@ -39,8 +42,11 @@ export const userControlledQuizHandler = async (io, socket) => {
             }
 
             //sending the details for participants to admin : 
-            const participantKey = `quiz:${presentationId}:Participants`;
+            const participantKey = `quiz:${presentationId}:participants`;
             const allParticipantsObj = await redis.hgetall(participantKey);
+
+            // Refresh TTL for existing session
+            await redis.expire(participantKey, QUIZ_TTL);
 
             socket.join(presentationId);
             const participants = Object.values(allParticipantsObj).map((s) => JSON.parse(s));
@@ -78,10 +84,10 @@ export const userControlledQuizHandler = async (io, socket) => {
                 return;
             }
 
-            // 3. Save into Redis for scalability
-            await redis.set(sessionKey, JSON.stringify(questions));
+            // 3. Save into Redis for scalability with TTL
+            await redis.setex(sessionKey, QUIZ_TTL, JSON.stringify(questions));
 
-            await redis.set(metaKey, JSON.stringify({
+            await redis.setex(metaKey, QUIZ_TTL, JSON.stringify({
                 presentationId,
                 type: "userControlled",
                 status: "live",
@@ -135,11 +141,11 @@ export const userControlledQuizHandler = async (io, socket) => {
             const attempted = attemptedRaw ? JSON.parse(attemptedRaw) : {};
 
             attempted[questionId] = { attempted: true, optionId, timeStamp: Date.now() };
-            await redis.set(attemptedKey, JSON.stringify(attempted));
+            await redis.setex(attemptedKey, QUIZ_TTL, JSON.stringify(attempted));
 
-            // --- Store individual response
+            // --- Store individual response with TTL
             const responseKey = `response:${presentationId}:${userId}:${questionId}`;
-            await redis.set(responseKey, JSON.stringify({
+            await redis.setex(responseKey, QUIZ_TTL, JSON.stringify({
                 presentationId,
                 userId,
                 userName,
@@ -149,9 +155,14 @@ export const userControlledQuizHandler = async (io, socket) => {
             }));
 
 
-            // --- Increment stats counter
+            // --- Increment stats counter and set TTL
             const statsKey = `stats:${presentationId}:${questionId}:${optionId}`;
             await redis.incr(statsKey);
+            await redis.expire(statsKey, QUIZ_TTL);
+
+            // Refresh session TTL on vote activity
+            const sessionKey = `quiz:${presentationId}:userControlled:questions`;
+            await redis.expire(sessionKey, QUIZ_TTL);
 
             // --- Emit only the updated question entity back to user
             socket.emit("updatedQuestion", {
@@ -193,6 +204,9 @@ export const userControlledQuizHandler = async (io, socket) => {
 
             // Push comment to Redis (list)
             await redis.rpush(commentKey, JSON.stringify(comment));
+
+            // Set TTL for comments (1 hour)
+            await redis.expire(commentKey, QUIZ_TTL);
 
             // Broadcast to everyone in room
             io.of("/userControlledQuiz")
@@ -309,8 +323,11 @@ export const userControlledQuizHandler = async (io, socket) => {
         }
         //--------------Participants List -----------------------//
         //adding Participant to the current quiz :
-        const participantKey = `quiz:${presentationId}:Participants`;
+        const participantKey = `quiz:${presentationId}:participants`;
         await redis.hset(participantKey, userId, JSON.stringify({ userName, userId }));
+        
+        // Set/refresh TTL for participants
+        await redis.expire(participantKey, QUIZ_TTL);
 
         socket.presentationId = presentationId;
         socket.userId = userId;
@@ -357,7 +374,7 @@ export const userControlledQuizHandler = async (io, socket) => {
         const { presentationId, userId } = socket;
         if (!presentationId || !userId) return;
 
-        const participantKey = `quiz:${presentationId}:Participants`;
+        const participantKey = `quiz:${presentationId}:participants`;
         await redis.hdel(participantKey, userId);
 
         const allParticipantsObj = await redis.hgetall(participantKey);

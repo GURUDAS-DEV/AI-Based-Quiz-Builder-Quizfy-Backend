@@ -6,6 +6,8 @@ import { questionModel } from "../../Models/Presentation/Question/QuestionModel.
 import { CommentModel } from "../../Models/Presentation/Comment.js";
 import jwt, { decode } from "jsonwebtoken";
 
+// TTL constant - 1 hour (3600 seconds)
+const QUIZ_TTL = 3600;
 
 export const adminControlledQuizHandler = (io, socket) => {
 
@@ -67,6 +69,11 @@ export const adminControlledQuizHandler = (io, socket) => {
             // Send all stored responses to the newly connected admin
             socket.emit("existingResponses", parsedResponses);
 
+            // Refresh TTL for existing session
+            await redis.expire(sessionKey, QUIZ_TTL);
+            await redis.expire(participantKey, QUIZ_TTL);
+            await redis.expire(`responses:${presentationId}`, QUIZ_TTL);
+
             if (allParticipantsObj && Object.keys(allParticipantsObj).length > 0) {
                 // participants exist in Redis
                 const participants = Object.values(allParticipantsObj).map((p) => JSON.parse(p));
@@ -122,6 +129,7 @@ export const adminControlledQuizHandler = (io, socket) => {
 
                     await redis.hset(sessionKey, "questionsState", JSON.stringify(questionsState));
                     await redis.hset(sessionKey, "currentIndex", String(currentQuestion.index || 0));
+                    await redis.expire(sessionKey, QUIZ_TTL);
                 }
 
                 // Send current question to admin and users (backwards compatible)
@@ -161,6 +169,9 @@ export const adminControlledQuizHandler = (io, socket) => {
                 await redis.hset(sessionKey, "questionsState", JSON.stringify(questionsState));
                 await redis.hset(sessionKey, "currentIndex", "0");
                 await redis.hset(sessionKey, "currentQuestion", JSON.stringify(currentQuestionObj));
+                
+                // Set TTL for new session (1 hour)
+                await redis.expire(sessionKey, QUIZ_TTL);
 
                 await Session.create({
                     quizId: presentationId,
@@ -262,7 +273,9 @@ export const adminControlledQuizHandler = (io, socket) => {
                 // Update pointer and currentQuestion in Redis (do NOT reset votes)
                 await redis.hset(sessionKey, "currentIndex", String(nextIndex));
                 await redis.hset(sessionKey, "currentQuestion", JSON.stringify(nextQuestionState));
-
+                
+                // Refresh TTL on question change
+                await redis.expire(sessionKey, QUIZ_TTL);
 
                 // Emit to admin and all users in the room (use room emit so all users receive)
                 socket.emit("newQuestionForAdmin", { question: nextQuestionState });
@@ -342,7 +355,9 @@ export const adminControlledQuizHandler = (io, socket) => {
             // Update pointer + currentQuestion in Redis
             await redis.hset(sessionKey, "currentIndex", String(prevIndex));
             await redis.hset(sessionKey, "currentQuestion", JSON.stringify(prevQuestionState));
-
+            
+            // Refresh TTL on question change
+            await redis.expire(sessionKey, QUIZ_TTL);
 
             // Send to admin + all users
             socket.emit("newQuestionForAdmin", { question: prevQuestionState });
@@ -403,6 +418,9 @@ export const adminControlledQuizHandler = (io, socket) => {
             questionsState[currentIndex] = currentQuestion;
             await redis.hset(sessionKey, "questionsState", JSON.stringify(questionsState));
             await redis.hset(sessionKey, "currentQuestion", JSON.stringify(currentQuestion));
+            
+            // Refresh TTL on vote
+            await redis.expire(sessionKey, QUIZ_TTL);
 
             // Build log entry
             const optionLabel = typeof optionIndex === "number" ? String.fromCharCode(65 + optionIndex) : null;
@@ -420,6 +438,9 @@ export const adminControlledQuizHandler = (io, socket) => {
 
             // Store response in Redis list for replay
             await redis.rpush(`responses:${presentationId}`, JSON.stringify(responseEntry));
+            
+            // Refresh TTL for responses list
+            await redis.expire(`responses:${presentationId}`, QUIZ_TTL);
 
             // Emit to update UI
             io.of("/adminControlledQuiz")
@@ -468,8 +489,8 @@ export const adminControlledQuizHandler = (io, socket) => {
             // Push comment to Redis (list)
             await redis.rpush(commentKey, JSON.stringify(comment));
 
-            // Reset TTL every time new comment comes (30 minutes)
-            await redis.expire(commentKey, 1800);
+            // Set TTL for comments (1 hour)
+            await redis.expire(commentKey, QUIZ_TTL);
 
             // Broadcast to everyone in room
             io.of("/adminControlledQuiz")
@@ -629,6 +650,9 @@ export const adminControlledQuizHandler = (io, socket) => {
             // --- 1) Add participant to Redis ---
             const participantKey = `quiz:${presentationId}:participants`;
             await redis.hset(participantKey, userId, JSON.stringify({ userId, userName }));
+            
+            // Set/refresh TTL for participants
+            await redis.expire(participantKey, QUIZ_TTL);
 
             // --- 2) Fetch updated participant list ---
             const allParticipantsObj = await redis.hgetall(participantKey);
