@@ -45,10 +45,10 @@ app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 const server = http.createServer(app);
 
-initSocket(server);
+await initSocket(server);
 
-connection("mongodb+srv://Gurudas_9811:Radhasoami9811@quizfycluster.odpmhss.mongodb.net/Quiz?retryWrites=true&w=majority&appName=QuizfyCluster")
-  .then(() => console.log("Connected Successfully!"))
+await connection(process.env.MONGO_DB_URL)
+  .then(() => console.log("MONGODB Connected Successfully!"))
   .catch((err) => console.log("Error: ", err));
 
 

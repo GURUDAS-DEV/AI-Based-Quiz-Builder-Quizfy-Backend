@@ -4,8 +4,8 @@ import { presentationModel } from "../../Models/Presentation/PresentationModels.
 import redis from "../../redis/redisClient.js";
 
 const openai = new OpenAI({
-  apiKey: process.env.GOOGLE_API_KEY,
-  baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+  apiKey: process.env.API_KEY,
+  baseURL: "https://api.groq.com/openai/v1",
 });
 
 const system_prompt = `
@@ -455,7 +455,9 @@ export const sendMessageToAI = async (req, res) => {
     }
 
     const response = await openai.chat.completions.create({
-      model: "gemini-2.0-flash",
+      model: "openai/gpt-oss-120b",
+      temperature: 0.7,
+      max_tokens: 4096,
       messages: [
         { role: "system", content: system_prompt },
         {
@@ -468,7 +470,7 @@ export const sendMessageToAI = async (req, res) => {
     const aiMessage = response.choices[0].message.content;
     return res.status(200).json({ reply: aiMessage });
   } catch (e) {
-    // console.log("Error in AI Feature", e);
+    console.log("Error in AI Feature", e);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -476,13 +478,14 @@ export const sendMessageToAI = async (req, res) => {
 export const sendMessageForAIPoweredQuiz = async (req, res) => {
   try {
     const { message } = req.body;
+    console.log("Received message for AI Powered Quiz:", message);
 
     if (!message) {
       return res.status(400).json({ error: "Message is required" });
     }
 
     const response = await openai.chat.completions.create({
-      model: "gemini-2.0-flash",
+      model: "openai/gpt-oss-120b",
       messages: [
         { role: "system", content: system_prompt_2 },
         {
@@ -491,6 +494,8 @@ export const sendMessageForAIPoweredQuiz = async (req, res) => {
         },
       ],
     });
+
+    console.log("AI Response Raw:", response);
 
     const aiMessage = response.choices[0].message.content;
     // console.log("AI Response:", aiMessage);
@@ -504,6 +509,7 @@ export const sendMessageForAIPoweredQuiz = async (req, res) => {
 export const addQuestionGeneratedByAI = async (req, res) => {
   try {
     const { questions, userId, userName } = req.body;
+    console.log("Adding Questions:", questions);
 
     if (!questions || questions.length === 0) {
       return res.status(400).json({ error: "Questions array is required" });
@@ -621,6 +627,12 @@ export const startAIPoweredQuizSession = async (req, res) => {
 export const recordTheAnswerForAIPoweredQuiz = async (req, res) => {
   try {
     const { presentationId, userId, questionId, selectedOptionId } = req.body;
+    console.log("Recording Answer:", {
+      presentationId,
+      userId,
+      questionId,
+      selectedOptionId,
+    });
 
     if (
       !presentationId ||

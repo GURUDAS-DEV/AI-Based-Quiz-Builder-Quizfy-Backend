@@ -69,11 +69,12 @@ export async function handleLogin(req, res) {
 
         //setting refresh token as http only cokkie for security purpose :  
         res.cookie("refreshToken", refreshToken, {
-            httpOnly: true,       // cannot be accessed by JS
-            secure: true,         // ✅ required for HTTPS (Render)
-            sameSite: "none",     // ✅ allows cross-origin request
-            maxAge: 20 * 24 * 60 * 60 * 1000, // 20 days
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            maxAge: 20 * 24 * 60 * 60 * 1000,
         });
+
 
 
         return res.status(202).json({
@@ -122,12 +123,14 @@ export async function handleLogout(req, res) {
 
     res.clearCookie("refreshToken", {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production", // secure in prod
-        sameSite: "Lax",
+        secure: true,        
+        sameSite: "none",
+        path: "/",            // IMPORTANT
     });
 
     return res.status(200).json({ message: "Logged out successfully" });
 }
+
 
 export async function handleDeleteUser(req, res) {
     try {
@@ -180,7 +183,7 @@ export async function handleUpdateName(req, res) {
 export async function updatePassword(req, res) {
     const { currentPassword, newPassword, confirmPassword } = req.body;
     const reqUser = req.user;
-    
+
     if (!reqUser) return res.status(404).json({ Message: "User Not Found!" });
 
     if (!currentPassword || !newPassword || !confirmPassword) return res.status(400).json({ Message: "Fill all the Fields!" });
@@ -211,7 +214,7 @@ export async function updatePassword(req, res) {
         return res.status(200).json({ Message: "Password Updated Successfully!" });
     }
     catch (e) {
-        return res.status(500).json({ Message: "Internal Server Error", error : e });
+        return res.status(500).json({ Message: "Internal Server Error", error: e });
     }
 
 }
