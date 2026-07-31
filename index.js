@@ -21,11 +21,12 @@ const app = express();
 
 const port = process.env.PORT || 9000;
 const allowedOrigin = [
+  process.env.FRONTEND_URL,
   'http://localhost:5173',  // your dev server
   'http://localhost:3000',  // your build test server
   'https://quizify-jlg9.onrender.com',
   'https://quizifyai.me' // your deployed frontend
-];
+].filter(Boolean);
 
 app.use(cors({
   origin: allowedOrigin,
@@ -63,5 +64,5 @@ app.get("/ping", (req, res)=>{
 
 
 server.listen(port, () => {
-    console.log("Server started on port 9000!");
+    console.log(`Server started on port ${port}!`);
 });
